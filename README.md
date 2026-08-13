@@ -143,7 +143,9 @@ is the point.
 ### Rebuilding from source
 
 Needs [oscar64](https://github.com/drmortalwombat/oscar64), a C compiler for the
-6502, plus Python 3, and gcc for the reference implementations.
+6502, plus Python 3 with numpy. gcc is needed only for the reference
+implementations, not for the cartridge. Exact versions, and what each one is
+actually for, are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
 
 ```
 cd src
