@@ -102,6 +102,25 @@ check it, not how you build it.
 gcc -O2 -o oracolo_att.exe oracolo_att.c -lm
 ```
 
+### For the animation only
+
+The GIF in the README is rebuilt by `cattura_film.py` (35 real screenshots, one
+per word, driven by VICE's monitor) and `monta_gif.py` (the timer bar and the
+GIF itself).
+
+| | verified with | what needs it |
+|---|---|---|
+| **Pillow** | **12.3.0** | `monta_gif.py` |
+| the C64 **chargen ROM** | the one shipped with VICE | drawing the timer in the machine's own font |
+
+```
+pip install Pillow
+```
+
+`monta_gif.py` looks for the character ROM inside the VICE installation; point
+`$env:CHARGEN` at `C64/chargen-901225-01.bin` if it is somewhere else. Neither
+script is needed to build or run the cartridge.
+
 ### Portability
 
 The three generator commands in the README are plain Python and should run

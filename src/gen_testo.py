@@ -81,6 +81,17 @@ PROVA_TOK = ""
 if "--tok" in sys.argv:
     PROVA_TOK = sys.argv[sys.argv.index("--tok") + 1]
     sys.argv = [a for a in sys.argv if a != "--tok" and a != PROVA_TOK]
+
+# --film: variante da filmare.  Identica al programma vero tranne che non
+# aspetta la tastiera: mostra lo schermo com'e' dopo aver premuto RETURN a
+# vuoto e parte da BOS.  Serve perche' VICE senza interfaccia non preme
+# nessun tasto e gen.c resterebbe fermo per sempre (sec. 16-bis).
+# ⚠️ Scrive genfilm.c / genfilmdata.h: gen.c e gendata.h NON si toccano,
+# cosi' il .crt pubblicato non dipende da questa strada.
+FILM = "--film" in sys.argv
+if FILM:
+    sys.argv = [a for a in sys.argv if a != "--film"]
+NOME = "genfilm" if FILM else "gen"
 SEME = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 NP = 2 if SEME else 1     # quanti token sono prompt e non si sovrascrivono
 if SEME:
@@ -290,7 +301,7 @@ sorgente = r'''/* gen.c - GENERATO DA gen_testo.py.  IL PROGRAMMA VERO: genera t
 #include <c64/vic.h>
 #include <c64/easyflash.h>
 #include <c64/keyboard.h>
-#include "gendata.h"
+#include "__DATAH__"
 
 #pragma region( main, 0x0900, 0x8000, , , { code, data, bss, stack } )
 #pragma stacksize( 2048 )
@@ -790,8 +801,17 @@ int main(void)
     nl(); nl(); put(p"end of test");
     while (true) ;
 #endif
+#ifdef FILM
+    /* Variante da filmare: nessuna tastiera.  Si stampa lo stesso quello che
+       si vede davvero, prompt compreso, perche' lo schermo dopo un RETURN a
+       vuoto e' esattamente questo.  inlen resta 0, quindi tokenizza() torna 1
+       e si parte da BOS, come premendo RETURN. */
+    put(p"type a beginning, or press return"); nl();
+    put(p"> "); nl();
+#else
     put(p"type a beginning, or press return"); nl();
     leggi_riga();
+#endif
     np = tokenizza();
     if (np > 1) {
         put(p"prompt: ");
@@ -924,11 +944,14 @@ int main(void)
 sorgente = (sorgente.replace("__REGIONI__", REGIONI)
                     .replace("__BANCHI__", BANCHI_C)
                     .replace("__DESCR__", DESCR)
-                    .replace("__SWITCH__", SWITCH))
-open("gen.c", "w", encoding="utf-8").write(sorgente)
+                    .replace("__SWITCH__", SWITCH)
+                    .replace("__DATAH__", NOME + "data.h"))
+open(NOME + ".c", "w", encoding="utf-8").write(sorgente)
 
-with open("gendata.h", "w", encoding="utf-8") as g:
+with open(NOME + "data.h", "w", encoding="utf-8") as g:
     g.write("/* generato da gen_testo.py */\n")
+    if FILM:
+        g.write("#define FILM 1\n")
     g.write("#define SEQG %d\n" % SEQG)
     g.write("#define NGEN %d\n" % NGEN)
     g.write("#define SEME %d\n" % SEME)
@@ -952,5 +975,5 @@ with open("gendata.h", "w", encoding="utf-8") as g:
     g.write("#define EMB_MANT %d\n" % L.EMB_MANT)
     g.write("#define EMB_SHIFT %d\n" % L.EMB_SHIFT)
 
-print("gen.c e gendata.h scritti")
+print("%s.c e %sdata.h scritti" % (NOME, NOME))
 print("COMPILARE CON -O2, NON -O3")

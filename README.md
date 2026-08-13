@@ -2,7 +2,8 @@
 
 A 688,128-parameter llama2 transformer with ternary weights, running on a stock
 Commodore 64 — no RAM expansion. The model lives in a bank-switched EasyFlash
-cartridge. It writes one word every 36 seconds.
+cartridge. It writes one word every forty seconds or so, and slows down as the
+sentence grows.
 
 ```
 llama2 ternario, 34 token
@@ -15,7 +16,17 @@ llama2 ternario, 34 token
 That is the same text the model produces in floating point on a PC, token for
 token.
 
-![The C64 after 21 minutes](docs/img/frase.png)
+![The C64 after 24 minutes](docs/img/frase.png)
+
+![The same sentence being written, at 35x, with the machine's own clock underneath](docs/img/ternary-c64-35x.gif)
+
+Thirty-five real screenshots, one per word, taken by stopping VICE's monitor at
+each call to the print routine and saving the screen at that instant. **The
+clock is not animated**: it is the emulated cycle count at that frame divided by
+the PAL clock, 985,248 Hz. The words get slower as they go — just over 39
+seconds at the start, nearly 46 at the end — because the attention has more
+context to sum over each time. `src/cattura_film.py` and `src/monta_gif.py`
+rebuild it.
 
 ---
 
@@ -95,15 +106,21 @@ multiply. A quarter-square MAC in assembly brought that to 81.
 |---|---|
 | ternary weights, 2 bits each | 688,128 |
 | model file | 242 KB |
-| cartridge image | 361 KB, 26 banks |
-| cycles per word, short context | 35,111,054 |
-| **seconds per word** | **35.6** (47 at full context) |
+| cartridge image | 361 KB, 22 banks |
+| cycles per word, short context | 38,619,875 |
+| **seconds per word** | **39.2**, rising to **45.9** at full context |
 | cycles per ternary MAC | 21 |
 | cycles per attention MAC | 81 |
-| free RAM left | 1280 bytes |
+| free RAM left | 256 bytes |
 | bit-exact checks passed | **21 / 21** |
 
-A 35-word sentence takes about 22 minutes.
+The 34 tokens of the sentence above take **24 minutes and 5 seconds**. Every
+word costs more than the one before it — 39.2 seconds for the first, 45.9 for
+the last — because the attention has one more position to sum over each time.
+
+Those two timings are not estimates. They come from VICE's monitor, stopped at
+each call to the print routine, divided by the PAL clock of 985,248 Hz.
+`src/cattura_film.py` prints all thirty-four of them.
 
 ---
 
@@ -132,8 +149,8 @@ single letters and the model, which has read nothing but children's stories,
 produces nonsense from it.
 
 **A typed prompt is not free.** Every prompt token costs a full forward pass,
-the same 36 seconds a generated one costs, because the model has to build its
-attention cache over it. `One day` is two tokens, so it is 72 seconds of
+the same forty seconds a generated one costs, because the model has to build its
+attention cache over it. `One day` is two tokens, so it is well over a minute of
 apparent silence before the first new word arrives. That is not a bug you can
 optimise away, it is what inference on this machine costs.
 
@@ -261,7 +278,7 @@ looking at.
 
 **2026 — this.** 688,128 weights, four layers, attention. The sentences are
 plain and childish, and every one of them is assembled from weights the model
-learned rather than picked off a list nobody wrote. It takes 36 seconds a word
+learned rather than picked off a list nobody wrote. It takes forty seconds a word
 and 361 KB of cartridge to do it. ELIZA needed a few KB and answered before you
 let go of the RETURN key.
 

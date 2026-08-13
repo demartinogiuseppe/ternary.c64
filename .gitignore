@@ -4,6 +4,7 @@
 
 # --- C sources written by the Python generators ---
 src/gen.c
+src/genfilm.c
 src/l04.c
 src/macq.c
 src/l0kern.c
@@ -15,6 +16,7 @@ src/_km*.c
 
 # --- generated headers ---
 src/gendata.h
+src/genfilmdata.h
 src/gencost.h
 src/l04data.h
 src/l04cost.h
@@ -47,6 +49,11 @@ src/tables.npz
 
 # --- screenshots from c64.ps1 runs (docs/img is kept) ---
 src/*.png
+
+# --- everything cattura_film.py produces: 34 machine snapshots at 1.2 MB
+#     each, one screenshot per word, monitor logs and command files. 44 MB,
+#     rebuilt in about 150 seconds. The finished GIF lives in docs/img. ---
+src/film/
 
 # --- Python ---
 __pycache__/
