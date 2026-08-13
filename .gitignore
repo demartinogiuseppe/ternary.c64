@@ -1,0 +1,58 @@
+# Rule: anything a Python generator writes, or the compiler produces, stays
+# out of the repository. It is rebuilt with four commands (see README) and
+# the output is deterministic.
+
+# --- C sources written by the Python generators ---
+src/gen.c
+src/l04.c
+src/macq.c
+src/l0kern.c
+src/l0test.c
+src/l0full.c
+src/l0att.c
+src/cart4.c
+src/_km*.c
+
+# --- generated headers ---
+src/gendata.h
+src/gencost.h
+src/l04data.h
+src/l04cost.h
+src/l0data.h
+src/l0fdata.h
+src/l0attdata.h
+src/banchi.h
+src/scale.h
+src/c64data.h
+
+# --- binaries derived from model_ternary.bin ---
+src/w[0-9]_*.bin
+src/l0_*.bin
+src/emb.bin
+src/emb[0-9].bin
+src/embT[0-9].bin
+src/tables.bin
+src/tables.npz
+
+# --- build artefacts ---
+*.crt
+*.asm
+*.map
+*.int
+*.lbl
+*.prg
+*.exe
+*.obj
+*.o
+
+# --- screenshots from c64.ps1 runs (docs/img is kept) ---
+src/*.png
+
+# --- Python ---
+__pycache__/
+*.pyc
+venv/
+
+# --- OS ---
+Thumbs.db
+.DS_Store

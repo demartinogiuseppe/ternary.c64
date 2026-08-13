@@ -1,0 +1,9 @@
+# Normalise text, never touch binaries.
+# model_ternary.bin must stay byte-identical: a line-ending conversion
+# applied to it by accident would corrupt the model silently, and the
+# program would produce plausible wrong numbers.
+* text=auto eol=lf
+
+*.bin binary
+*.png binary
+*.crt binary

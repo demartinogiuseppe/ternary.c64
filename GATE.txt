@@ -1,0 +1,27 @@
+GATE TERNARIO - criterio deciso PRIMA di vedere i risultati
+
+Passa se:
+  1. val loss ternaria <= val loss fp32 + 0.25
+  2. almeno 6 campioni su 10 formano frasi di senso compiuto
+
+Se B passa           -> si procede con dim 64  (C64: 3-8 secondi per parola)
+Se passa solo C      -> si procede con dim 128 (C64: 12-30 secondi per parola)
+Se non passa nessuno -> il progetto si chiude e si pubblica il risultato negativo
+
+
+--------------------------------------------------------------------------
+English translation. The Italian above is the original, written before any
+of the numbers were known, and kept unchanged for that reason.
+
+TERNARY GATE - criterion decided BEFORE seeing any results
+
+It passes if:
+  1. ternary val loss <= fp32 val loss + 0.25
+  2. at least 6 samples out of 10 form sentences that make sense
+
+If B passes         -> continue with dim 64  (C64: 3-8 seconds per word)
+If only C passes    -> continue with dim 128 (C64: 12-30 seconds per word)
+If neither passes   -> the project is closed and the negative result published
+
+Outcome: B failed (val loss 2.25 against 1.81). C passed at 1.4390. The
+project continued at dim 128, and the third line was never needed.

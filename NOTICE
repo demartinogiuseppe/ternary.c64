@@ -1,0 +1,62 @@
+ternary.c64
+Copyright (c) 2026 Giuseppe De Martino — MIT, see LICENSE.
+
+This project builds on work by others. What follows is what is owed and to
+whom.
+
+
+llama2.c — Andrej Karpathy
+https://github.com/karpathy/llama2.c   (MIT)
+
+    The model was trained with llama2.c: its architecture (model.py) and
+    its training loop (train.py), modified to use ternary weights.
+
+    No code from llama2.c is redistributed in this repository. Training is
+    reproduced by cloning it and applying two patches:
+
+        git clone https://github.com/karpathy/llama2.c
+        python patch_train.py     # inserts the BitLinear substitution
+        python patch_sample.py
+
+    src/patch_train.py quotes two single lines from upstream train.py as
+    the anchors it searches for. That is the whole of the upstream code
+    present here, and a patch cannot name its target otherwise.
+
+    src/generate.c and src/generate_fx.c are independent implementations,
+    not ports of run.c: they read this project's own TC64 format and share
+    with run.c only the standard names of the operations — rmsnorm,
+    softmax, forward. They contain none of its structures.
+
+
+TinyStories — Ronen Eldan, Yuanzhi Li
+https://huggingface.co/datasets/roneneldan/TinyStories   (CDLA-Sharing-1.0)
+
+    The model in src/model_ternary.bin was trained on TinyStories, and
+    src/vocab.txt is a 512-token SentencePiece vocabulary built from it.
+
+    Section 3.5 of CDLA-Sharing-1.0 states that the agreement "imposes no
+    obligations or restrictions on Your Use or Publication of Results",
+    where Results are "the outcomes or outputs that You obtain from Your
+    Computational Use of Data". Trained weights are Results. The credit
+    here is given because it is owed, not because the licence requires it.
+
+
+oscar64 — Dr Mortal Wombat
+https://github.com/drmortalwombat/oscar64
+
+    The C compiler for the 6502 that this project targets. Not
+    redistributed; required to build. Several of its behaviours are
+    documented in the README because they shaped the code.
+
+
+Prior work
+
+    Maciej Witkowiak — llama2.c64
+    https://github.com/ytmytm/llama2.c64
+
+    Matt Beton — bitnet-6502
+    https://mattbeton.com/blog/bitnet-6502.html
+
+    Neither is used here, and this project reuses none of their code. They
+    are named because they defined the gap it aims at, and because the
+    comparison in the README is only meaningful if the reader can check it.
