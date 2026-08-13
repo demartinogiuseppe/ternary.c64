@@ -35,7 +35,7 @@ $ErrorActionPreference = "Stop"
 
 function Trova-Strumento($daEnv, $default, $nomeExe) {
     if ($daEnv -and (Test-Path $daEnv)) { return $daEnv }
-    if (Test-Path $default) { return $default }
+    if ($default -and (Test-Path $default)) { return $default }
     $c = Get-Command $nomeExe -ErrorAction SilentlyContinue
     if ($c) { return $c.Source }
     return $null

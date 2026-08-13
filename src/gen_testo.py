@@ -77,6 +77,10 @@ NGEN = 34
 # giunta quello su cui e' stata messa a punto tutta la pipeline: sec. 6 dice
 # che non e' un campione.  Le 150 prove di fedelta' erano sulla SIMULAZIONE
 # della forma C64, non sul binario.
+PROVA_TOK = ""
+if "--tok" in sys.argv:
+    PROVA_TOK = sys.argv[sys.argv.index("--tok") + 1]
+    sys.argv = [a for a in sys.argv if a != "--tok" and a != PROVA_TOK]
 SEME = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 NP = 2 if SEME else 1     # quanti token sono prompt e non si sovrascrivono
 if SEME:
@@ -285,6 +289,7 @@ sorgente = r'''/* gen.c - GENERATO DA gen_testo.py.  IL PROGRAMMA VERO: genera t
 #include <c64/cia.h>
 #include <c64/vic.h>
 #include <c64/easyflash.h>
+#include <c64/keyboard.h>
 #include "gendata.h"
 
 #pragma region( main, 0x0900, 0x8000, , , { code, data, bss, stack } )
@@ -351,6 +356,78 @@ static void putnum(long v)
     if (u == 0) { cwin_put_char(&cw, p'0', VCOL_LT_BLUE); return; }
     while (u) { buf[--i] = p'0' + (char)(u % 10); u /= 10; }
     while (i < 12) cwin_put_char(&cw, buf[i++], VCOL_LT_BLUE);
+}
+
+/* ---------------------------------------------------------------- INPUT
+   Lettura da tastiera senza KERNAL (keyb_poll scansiona la matrice) e
+   tokenizzatore greedy longest-match sullo stesso vocabolario che serve
+   alla stampa.  Il confronto e' PETSCII contro PETSCII: VTXT e' gia'
+   convertito, e la tastiera restituisce gli stessi codici.
+   ⚠️ Distingue maiuscole e minuscole, come il tokenizzatore vero: " One"
+   e " one" sono token diversi, quindi lo shift conta. */
+static char inbuf[IN_MAX];
+static char inlen = 0;
+
+static void leggi_riga(void)
+{
+    char k, prec = 0;
+    put(p"> ");
+    for (;;) {
+        keyb_poll();
+        k = (keyb_key & KSCAN_QUAL_DOWN) ? keyb_codes[keyb_key & 0x7f] : 0;
+        if (k == prec) continue;          /* niente ripetizione automatica */
+        prec = k;
+        if (k == 0) continue;
+        if (k == KEY_RETURN) { nl(); return; }
+        if (k == KEY_DEL) {
+            if (inlen > 0) {
+                inlen--;
+                cwin_cursor_left(&cw);
+                cwin_put_char(&cw, p' ', VCOL_LT_BLUE);
+                cwin_cursor_left(&cw);
+            }
+            continue;
+        }
+        if (inlen < IN_MAX - 1) {
+            inbuf[inlen++] = k;
+            cwin_put_char(&cw, k, VCOL_LT_BLUE);
+        }
+    }
+}
+
+/* Il pezzo piu' lungo del vocabolario che combacia a partire da pos.
+   Si scarta subito su primo byte diverso: 512 voci per posizione sono
+   poche decine di migliaia di cicli, non si nota. */
+static int piu_lungo(char pos, char * quanti)
+{
+    int t, mig = -1;
+    char i, n, migl = 0;
+    unsigned o;
+    eflash.bank = BANCOK;
+    for (t = 259; t < VOC; t++) {
+        n = VLEN[t];
+        if (n == 0 || n <= migl || pos + n > inlen) continue;
+        o = VOFF[t];
+        for (i = 0; i < n; i++)
+            if (VTXT[o + i] != inbuf[pos + i]) break;
+        if (i == n) { mig = t; migl = n; }
+    }
+    *quanti = migl;
+    return mig;
+}
+
+static char tokenizza(void)
+{
+    char pos = 0, n, quanti;
+    int t;
+    n = 1;                                /* ids[0] e' il BOS */
+    while (pos < inlen && n < SEQG - 4) {
+        t = piu_lungo(pos, &quanti);
+        if (t < 0) { pos++; continue; }   /* carattere non rappresentabile */
+        ids[n++] = t;
+        pos += quanti;
+    }
+    return n;
 }
 
 /* la stringa del token, gia' in PETSCII dentro il banco delle costanti */
@@ -667,6 +744,7 @@ static int output_head(void)
 int main(void)
 {
     int i, l, m, pos, d, b, tok;
+    char np;
     char s;
     long t;
 
@@ -685,13 +763,42 @@ int main(void)
     cwin_clear(&cw);
     cwin_fill(&cw, 32, VCOL_LT_BLUE);   /* anche la RAM colore, non solo i caratteri */
 
-    put(p"llama2 ternario, "); putnum((long)NGEN);
-    put(p" token"); nl(); nl();
+    /* Schermata di titolo.  Una cartuccia prende il controllo prima che la
+       ROM del BASIC stampi il suo banner, quindi quello non compare: e' come
+       funzionavano tutte le cartucce dal 1982 in poi.  Quello che facevano,
+       pero', era avere un titolo proprio, ed e' questo.
+       ⚠️ Niente "BASIC V2" e niente "BYTES FREE": sarebbero affermazioni
+       false, perche' il BASIC non c'e' e quella memoria non e' libera. */
+    put(p"       **** COMMODORE 64 ****"); nl(); nl();
+    put(p"   TERNARY.C64   "); putnum(688128L); put(p" WEIGHTS"); nl();
+    put(p"   MODEL IN CARTRIDGE, 22 BANKS"); nl(); nl();
 
     ids[0] = 1;                       /* BOS */
-#if SEME
-    ids[1] = SEME;
+
+    /* Il prompt e' facoltativo: RETURN a vuoto e parte da solo, come prima.
+       ⚠️ Ogni token di prompt costa un passaggio completo del modello, cioe'
+       36 secondi: non e' gratis come su una macchina moderna. */
+#ifdef PROVA_TOK
+    /* banco di prova: stessa strada del codice vero, senza la tastiera */
+    for (i = 0; i < PROVA_LEN; i++) inbuf[i] = PROVA[i];
+    inlen = PROVA_LEN;
+    np = tokenizza();
+    put(p"tok:"); nl();
+    for (i = 1; i < np; i++) { putnum((long)ids[i]); cwin_put_char(&cw, p' ', VCOL_LT_BLUE); }
+    nl();
+    for (i = 1; i < np; i++) stampa_token(ids[i]);
+    nl(); nl(); put(p"end of test");
+    while (true) ;
 #endif
+    put(p"type a beginning, or press return"); nl();
+    leggi_riga();
+    np = tokenizza();
+    if (np > 1) {
+        put(p"prompt: ");
+        for (i = 1; i < np; i++) stampa_token(ids[i]);
+        nl();
+    }
+    nl();
 
     for (pos = 0; pos < NGEN; pos++) {
         tok = ids[pos];
@@ -793,22 +900,20 @@ int main(void)
         rmsnorm(xb, x, NRM_FIN, DIM);
         tok = output_head();
         /* i token di prompt non si sovrascrivono */
-        if (pos + 1 >= NP && pos + 1 < SEQG) ids[pos + 1] = tok;
+        if (pos + 1 >= np && pos + 1 < SEQG) ids[pos + 1] = tok;
         GEN[pos] = tok;
 
         /* la parola compare appena e' pronta: mezzo minuto di attesa e poi
            una parola, che e' esattamente la cosa da far vedere */
-        stampa_token(tok);
+        if (pos + 1 >= np) stampa_token(tok);
     }
 
+    /* Gli id NON si stampano piu': servivano a confrontare le sequenze con
+       l'oracolo, e in un filmato sono quattro righe di numeri senza
+       spiegazione sotto una frase in inglese.  Il confronto con l'oracolo
+       resta possibile da l04, che e' il posto giusto per i numeri. */
     nl(); nl();
-    put(p"id:"); nl();
-    for (i = 0; i < NGEN; i++) {
-        putnum((long)GEN[i]);
-        cwin_put_char(&cw, p' ', VCOL_LT_BLUE);
-    }
-    nl(); nl();
-    put(p"fine");
+    put(p"done.");
 
     while (true)
         ;
@@ -835,6 +940,15 @@ with open("gendata.h", "w", encoding="utf-8") as g:
     g.write("#define BANCOM %d\n" % BANCOM)
     g.write("#define BANCOE %d\n" % BANCOE)
     g.write("#define DPB %d\n" % DPB)
+    g.write("#define IN_MAX 32   /* caratteri digitabili nel prompt */\n")
+    if PROVA_TOK:
+        # banco di prova del tokenizzatore: niente tastiera, testo fisso.
+        # Serve a esercitare piu_lungo() e tokenizza() sul C64 e confrontare
+        # gli id con la versione Python, senza dover digitare in VICE.
+        pt = petscii(PROVA_TOK.encode("latin1"))
+        g.write("#define PROVA_TOK 1\n")
+        g.write("#define PROVA_LEN %d\n" % len(pt))
+        g.write("const char PROVA[%d] = {%s};\n" % (len(pt), vet(pt)))
     g.write("#define EMB_MANT %d\n" % L.EMB_MANT)
     g.write("#define EMB_SHIFT %d\n" % L.EMB_SHIFT)
 

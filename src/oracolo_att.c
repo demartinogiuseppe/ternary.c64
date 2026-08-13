@@ -249,6 +249,20 @@ int main(int argc, char **argv) {
     if (argc > 1 && strcmp(argv[1], "-dump") == 0) dump = 1;
     if (argc > 1 && strcmp(argv[1], "-dump4") == 0) dump4 = 1;
     if (argc > 2 && strcmp(argv[1], "-seq") == 0) seme = atoi(argv[2]);
+
+    /* -prompt "403,407,261,378" : innesca con una LISTA di token dopo il BOS
+       e stampa la continuazione.  Serve a scegliere il prompt guardando cosa
+       risponde, invece di costruire prima la tastiera sul C64 e scoprirlo
+       dopo. */
+    int nprompt = 0, prompt[SEQ];
+    if (argc > 2 && strcmp(argv[1], "-prompt") == 0) {
+        char *p = argv[2];
+        while (*p && nprompt < SEQ - 2) {
+            prompt[nprompt++] = atoi(p);
+            while (*p && *p != ',') p++;
+            if (*p == ',') p++;
+        }
+    }
     FILE *f = fopen("model_ternary.bin", "rb");
     if (!f) { printf("model_ternary.bin non trovato\n"); return 1; }
     char magic[5] = {0}; int hdr[7];
@@ -309,13 +323,17 @@ int main(int argc, char **argv) {
        scelte di realizzazione (cache int8, reciproco unico) diano lo stesso
        testo su PROMPT DIVERSI, non solo su quello di riferimento. */
     const int N = (int)(sizeof(atteso) / sizeof(atteso[0]));
-    const int NP = seme >= 0 ? 2 : 5;   /* prova = BOS + un token */
+    const int NP = nprompt > 0 ? nprompt + 1 : (seme >= 0 ? 2 : 5);
 
     static fx x[DIM], xb[DIM], q[DIM], kk[KVDIM], vv[KVDIM];
     static fx cat[DIM], out[DIM], h1[HIDDEN], h3[HIDDEN];
     static int32_t att[SEQ], logit[VOCAB];
     int ids[SEQ], n = NP, prima = -1, ndiv = 0;
-    if (seme >= 0) { ids[0] = 1; ids[1] = seme; }
+    if (nprompt > 0) {
+        ids[0] = 1;
+        for (int i = 0; i < nprompt; i++) ids[i + 1] = prompt[i];
+    }
+    else if (seme >= 0) { ids[0] = 1; ids[1] = seme; }
     else for (int i = 0; i < NP; i++) ids[i] = atteso[i];
 
     for (int step = 0; step < N; step++) {
@@ -498,7 +516,7 @@ int main(int argc, char **argv) {
         if (step >= NP - 1 && n < N) {
             int best = 0;
             for (int t = 1; t < VOCAB; t++) if (logit[t] > logit[best]) best = t;
-            if (seme < 0 && best != atteso[n]) {
+            if (seme < 0 && nprompt == 0 && best != atteso[n]) {
                 if (prima < 0) prima = n;
                 ndiv++;
             }
@@ -506,6 +524,17 @@ int main(int argc, char **argv) {
         }
     }
 
+    if (nprompt > 0) {
+        printf("\nprompt : ");
+        for (int i = 1; i <= nprompt; i++) printf("%s", vocab[ids[i]]);
+        printf("\ncontinua:");
+        for (int i = nprompt + 1; i < n; i++) printf("%s", vocab[ids[i]]);
+        printf("\n\nid     :");
+        for (int i = 0; i < n; i++) printf(" %d", ids[i]);
+        printf("\n\n%d token di prompt = %d s di attesa prima della prima "
+               "parola nuova\n", nprompt, nprompt * 36);
+        return 0;
+    }
     if (seme >= 0) {
         for (int i = 0; i < n; i++) printf("%d ", ids[i]);
         printf("\n");

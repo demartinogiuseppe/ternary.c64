@@ -117,6 +117,26 @@ EasyFlash support:
 x64sc -cartcrt gen.crt
 ```
 
+It asks for a beginning. Press RETURN on an empty line and it writes the
+sentence above on its own. Or type something and it continues from there:
+
+```
+> One day
+, a little boy named Tim went to the park with his mom...
+```
+
+What you type is tokenised on the machine against the same 512-token
+vocabulary the model was trained with, so anything is representable, but only
+simple English gets tokenised into whole words. Anything else falls apart into
+single letters and the model, which has read nothing but children's stories,
+produces nonsense from it.
+
+**A typed prompt is not free.** Every prompt token costs a full forward pass,
+the same 36 seconds a generated one costs, because the model has to build its
+attention cache over it. `One day` is two tokens, so it is 72 seconds of
+apparent silence before the first new word arrives. That is not a bug you can
+optimise away, it is what inference on this machine costs.
+
 Press **Alt+W** for warp mode unless you want to watch it at real speed, which
 is the point.
 
