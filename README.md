@@ -112,7 +112,7 @@ multiply. A quarter-square MAC in assembly brought that to 81.
 | cycles per ternary MAC | 21 |
 | cycles per attention MAC | 81 |
 | free RAM left | 256 bytes |
-| bit-exact checks passed | **21 / 21** |
+| bit-exact checks passed | **22 / 22** |
 
 The 34 tokens of the sentence above take **24 minutes and 5 seconds**. Every
 word costs more than the one before it — 39.2 seconds for the first, 45.9 for
@@ -203,7 +203,7 @@ in zero page and collides with the inline assembly.
 ## How it is verified
 
 Every component was checked **bit-exact against a reference implementation in C
-on the PC** before the next one was built. Twenty-one checks, twenty-one passed.
+on the PC** before the next one was built. Twenty-two checks, twenty-two passed.
 
 ```
 gcc -O2 -o oracolo_att.exe oracolo_att.c -lm
@@ -220,6 +220,14 @@ directly from the oracle, so the two cannot drift apart.
 stricter test: every token depends on all the previous ones rather than on
 supplied values. Six different prompts were compared token by token against the
 oracle. No divergence.
+
+The tokeniser that runs on the machine was checked the same way, against the
+Python one: `python gen_testo.py --tok " One day"` builds a headless variant
+that prints the ids and stops. Three prompts, identical ids.
+
+The keyboard itself is the one part with no automatic check. VICE headless
+presses no keys, and `-keybuf` writes into the KERNAL buffer while this code
+reads the matrix directly. It was tried by hand.
 
 Bit-exactness is not the same as matching floating point. On the reference
 prompt the fixed-point pipeline produces exactly the same tokens as float; on an
