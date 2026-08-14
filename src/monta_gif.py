@@ -22,7 +22,13 @@ from collections import Counter
 from PIL import Image
 
 VELOCITA = 35            # quante volte piu' veloce del vero
-FPS = 10                 # fotogrammi al secondo della GIF
+FPS = 8                  # fotogrammi al secondo della GIF.  Non e' una scelta
+                         # estetica: LinkedIn anima al massimo 400 fotogrammi e
+                         # oltre quella soglia congela il primo.  A 10 fps erano
+                         # 416.  Gli fps non toccano ne' la durata ne' VELOCITA:
+                         # fotogrammi = durata x FPS, e qui si muove solo il
+                         # cronometro, che avanza di ~4 secondi di C64 per
+                         # fotogramma in entrambi i casi.
 SCALA = 2                # lo schermo del C64 e' 384x272: troppo piccolo da telefono
 DIR = "film"
 USCITA = "film/ternary-c64-35x.gif"
