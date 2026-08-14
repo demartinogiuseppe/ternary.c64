@@ -16,8 +16,6 @@ llama2 ternario, 34 token
 That is the same text the model produces in floating point on a PC, token for
 token.
 
-![The C64 after 24 minutes](docs/img/frase.png)
-
 ![The same sentence being written, at 35x, with the machine's own clock underneath](docs/img/ternary-c64-35x.gif)
 
 Thirty-five real screenshots, one per word, taken by stopping VICE's monitor at
