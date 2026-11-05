@@ -132,6 +132,10 @@ EasyFlash support:
 x64sc -cartcrt gen.crt
 ```
 
+The same cartridge is also on Hugging Face, together with the trained weights
+as safetensors, the tokenizer and a PyTorch snippet that runs them:
+[gdm32569/ternary-c64-688k](https://huggingface.co/gdm32569/ternary-c64-688k).
+
 It asks for a beginning. Press RETURN on an empty line and it writes the
 sentence above on its own. Or type something and it continues from there:
 
